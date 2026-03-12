@@ -1,0 +1,36 @@
+# dependencies
+node_modules/
+
+# dotenv environment files
+.env
+.env.*
+
+# logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# coverage reports
+coverage/
+
+# build outputs
+dist/
+
+# jest cache
+jest-cache/
+
+# database credentials/secrets
+*.pem
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE/editor files
+.vscode/
+.idea/
+
+# test artifacts
+tests/__mocks__
