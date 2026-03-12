@@ -68,6 +68,45 @@ tsconfig.json
 - Use environment variables for all secrets (JWT, database credentials).
 - The seed script is intentionally destructive; do not run against production databases.
 
+## 🚢 Deployment
+
+The backend can be deployed in several ways; we recommend [Railway](https://railway.app) but any Node.js host will work.
+
+### 🚀 Railway options
+
+1. **One‑click template** – start from a ready‑made repo and eject.
+2. **GitHub repo** – connect your GitHub project, add a PostgreSQL service, set `DATABASE_URL=${{Postgres.DATABASE_URL}}`, then click Deploy.
+3. **CLI** – install `railway` CLI, run `railway init`, add a Postgres service (`railway add -d postgres`), configure a service with `DATABASE_URL`, and finally `railway up`.
+4. **Dockerfile** – include the `Dockerfile` provided in the project root; Railway automatically detects and builds it when deploying from CLI or GitHub.  You can also push the image to any registry and point Railway to it.
+
+> During deployment you’ll need to set the same env vars used locally (see `sample.env`).
+
+### ✅ Example `Dockerfile`
+
+```dockerfile
+# Use the Node official image
+# https://hub.docker.com/_/node
+FROM node:lts
+
+# Create and change to the app directory.
+WORKDIR /app
+
+# Copy local code to the container image
+COPY . ./
+
+# Install packages
+RUN npm ci
+
+# Serve the app
+CMD ["npm", "run", "start"]
+```
+
+### ⚠️ Notes
+
+* The seed script is destructive; don’t run it in production.
+* Use environment variables for credentials (`JWT_SECRET`, database URL, etc.).
+* You may adapt the guide above for other providers (Heroku, Vercel, etc.).
+
 ## 🧩 Contributing
 
 1. Fork the repo and create a new branch
