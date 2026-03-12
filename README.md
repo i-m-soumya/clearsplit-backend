@@ -83,23 +83,34 @@ The backend can be deployed in several ways; we recommend [Railway](https://rail
 
 ### ✅ Example `Dockerfile`
 
+This Dockerfile uses a **multi-stage build** so the final image only contains the compiled JavaScript and production dependencies. It also exposes a health‑check that verifies the container can reach the database.
+
 ```dockerfile
-# Use the Node official image
-# https://hub.docker.com/_/node
-FROM node:lts
-
-# Create and change to the app directory.
+# stage 1: compile project
+FROM node:lts AS builder
 WORKDIR /app
-
-# Copy local code to the container image
-COPY . ./
-
-# Install packages
+COPY package.json package-lock.json ./
 RUN npm ci
+COPY . ./
+RUN npm run build
 
-# Serve the app
-CMD ["npm", "run", "start"]
+# stage 2: runtime image
+FROM node:lts
+WORKDIR /app
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./
+
+ENV NODE_ENV=production
+EXPOSE 5000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD node -e "require('./dist/db').query('SELECT 1').then(()=>process.exit(0)).catch(()=>process.exit(1))"
+
+CMD ["node", "dist/index.js"]
 ```
+
+> 💡 Logs from the container are written to stdout/stderr; use `docker logs <id>` or the Railway console to inspect them. The healthcheck above pings the MySQL pool exported by `src/db.ts`—if your `DATABASE_URL` is incorrect or the database is unavailable, the container will fail the check.
 
 ### ⚠️ Notes
 
