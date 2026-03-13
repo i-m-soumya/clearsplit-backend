@@ -2,17 +2,6 @@ import { info } from './logger';
 import nodemailer from 'nodemailer';
 
 export class OtpService {
-  private static transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST,
-    port: parseInt(process.env.EMAIL_PORT || '587'),
-    secure: false, // true for 465, false for other ports
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-    connectionTimeout: 10000, // 10 seconds
-    socketTimeout: 10000, // 10 seconds
-  });
 
   static generateOtp(): string {
     return Math.floor(1000 + Math.random() * 9000).toString();
@@ -37,6 +26,23 @@ export class OtpService {
 </svg>`;
 
   static async sendOtp(email: string, otp: string) {
+    const port = parseInt(process.env.EMAIL_PORT || '587');
+    const secure = port === 465; // true for 465, false for others
+
+    // Create transporter on-demand with proper configuration
+    const transporter = nodemailer.createTransport({
+      host: process.env.EMAIL_HOST,
+      port,
+      secure,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+      connectionTimeout: 5000, // 5 seconds
+      socketTimeout: 5000,     // 5 seconds
+      pool: true, // Enable connection pooling
+    });
+
     const subject = 'Verify your ClearSplit account';
     const plainText = `Hello,
 
@@ -89,11 +95,14 @@ If you did not request this, you can safely ignore this email.
     };
 
     try {
-      await this.transporter.sendMail(mailOptions);
+      await transporter.sendMail(mailOptions);
       info(`[OTP] OTP sent successfully to ${email}`);
     } catch (error) {
       info(`[OTP] Failed to send OTP to ${email}: ${error}`);
       throw new Error('Failed to send OTP');
+    } finally {
+      // Close the transporter to free resources
+      transporter.close();
     }
   }
 }
