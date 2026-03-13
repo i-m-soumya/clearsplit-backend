@@ -19,6 +19,7 @@ A Node.js/TypeScript REST API for managing shared expenses with group splitting 
    - Copy `sample.env` to `.env` and populate with your own values.
    - A typical configuration uses a MySQL-compatible database (Aiven, local, etc.).
    - `JWT_SECRET` should be a long, random string in production.
+   - For email OTP functionality, the sample.env is configured to use Mailtrap for testing. For production, update to your preferred SMTP provider.
 
 4. **Database setup**
    ```bash

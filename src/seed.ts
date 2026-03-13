@@ -31,6 +31,9 @@ export async function seed() {
         password_hash VARCHAR(255) NOT NULL,
         phone VARCHAR(20) UNIQUE,
         avatar_url VARCHAR(255),
+        is_verified BOOLEAN DEFAULT FALSE,
+        otp_code VARCHAR(4),
+        otp_expires_at TIMESTAMP NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
@@ -106,6 +109,24 @@ export async function seed() {
       )
     `);
 
+    await pool.query(`
+      CREATE TABLE user_preferences (
+        user_id VARCHAR(36) PRIMARY KEY,
+        theme ENUM('light', 'dark', 'system') DEFAULT 'system',
+        email_all BOOLEAN DEFAULT TRUE,
+        email_expense_added BOOLEAN DEFAULT TRUE,
+        email_settled BOOLEAN DEFAULT TRUE,
+        email_daily_summary BOOLEAN DEFAULT FALSE,
+        email_weekly_summary BOOLEAN DEFAULT TRUE,
+        push_notifications BOOLEAN DEFAULT TRUE,
+        whatsapp_notifications BOOLEAN DEFAULT FALSE,
+        sms_notifications BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+
     console.log('Schema created.');
 
     const passHash = await bcrypt.hash('password123', 10);
@@ -114,10 +135,10 @@ export async function seed() {
     const userId3 = uuidv4();
 
     await pool.query(
-      `INSERT INTO users (id, full_name, email, password_hash, phone) VALUES 
-      (?, ?, ?, ?, ?),
-      (?, ?, ?, ?, ?),
-      (?, ?, ?, ?, ?)`,
+      `INSERT INTO users (id, full_name, email, password_hash, phone, is_verified) VALUES 
+      (?, ?, ?, ?, ?, TRUE),
+      (?, ?, ?, ?, ?, TRUE),
+      (?, ?, ?, ?, ?, TRUE)`,
       [
         userId1, 'Soumya Ghosh', 'soumya@clearsplit.app', passHash, '+919999999991',
         userId2, 'Rahul Dev', 'rahul@clearsplit.app', passHash, '+919999999992',
@@ -160,6 +181,15 @@ export async function seed() {
       `INSERT INTO expense_splits (id, expense_id, user_id, amount, weight) VALUES
       (?, ?, ?, 1000.00, 1), (?, ?, ?, 1000.00, 1), (?, ?, ?, 1000.00, 1)`,
       [split1, expId1, userId1, split2, expId1, userId2, split3, expId1, userId3]
+    );
+
+    // Insert user preferences
+    await pool.query(
+      `INSERT INTO user_preferences (user_id, theme, email_daily_summary) VALUES 
+      (?, 'dark', TRUE),
+      (?, 'light', FALSE),
+      (?, 'system', FALSE)`,
+      [userId1, userId2, userId3]
     );
 
     // everything succeeded -- commit transaction
