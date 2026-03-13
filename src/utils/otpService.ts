@@ -1,5 +1,4 @@
 import { info } from './logger';
-import nodemailer from 'nodemailer';
 
 export class OtpService {
 
@@ -26,23 +25,6 @@ export class OtpService {
 </svg>`;
 
   static async sendOtp(email: string, otp: string) {
-    const port = parseInt(process.env.EMAIL_PORT || '587');
-    const secure = port === 465; // true for 465, false for others
-
-    // Create transporter on-demand with proper configuration
-    const transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST,
-      port,
-      secure,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-      connectionTimeout: 5000, // 5 seconds
-      socketTimeout: 5000,     // 5 seconds
-      pool: true, // Enable connection pooling
-    });
-
     const subject = 'Verify your ClearSplit account';
     const plainText = `Hello,
 
@@ -58,7 +40,9 @@ If you did not request this, you can safely ignore this email.
       <div style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1f2937;">
         <div style="max-width: 520px; margin: 0 auto; padding: 32px;">
           <div style="text-align: center; margin-bottom: 24px;">
-            <img src="cid:clearsplit-logo" width="72" height="72" alt="ClearSplit" style="display: inline-block; margin-bottom: 16px;" />
+            <div style="width: 72px; height: 72px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
+              ${this.logoSvg}
+            </div>
             <h1 style="margin: 0; font-size: 24px; letter-spacing: -0.02em;">Verify your email</h1>
             <p style="margin: 8px 0 0; color: #4b5563;">Use the code below to complete your ClearSplit sign up.</p>
           </div>
@@ -79,31 +63,29 @@ If you did not request this, you can safely ignore this email.
       </div>
     `;
 
-    const mailOptions = {
-      from: 'donotreply@clearsplit.io',
-      to: email,
-      subject,
-      text: plainText,
-      html,
-      attachments: [
-        {
-          filename: 'logo.svg',
-          content: this.logoSvg,
-          cid: 'clearsplit-logo',
-        },
-      ],
-    };
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
+        to: email,
+        subject,
+        text: plainText,
+        html,
+      }),
+    });
 
-    try {
-      await transporter.sendMail(mailOptions);
-      info(`[OTP] OTP sent successfully to ${email}`);
-    } catch (error) {
-      info(`[OTP] Failed to send OTP to ${email}: ${error}`);
+    if (!response.ok) {
+      const errorData = await response.text();
+      info(`[OTP] Failed to send OTP to ${email}: ${response.status} ${errorData}`);
       throw new Error('Failed to send OTP');
-    } finally {
-      // Close the transporter to free resources
-      transporter.close();
     }
+
+    const result = await response.json();
+    info(`[OTP] OTP sent successfully to ${email}, ID: ${result.id}`);
   }
 }
 
