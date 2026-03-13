@@ -6,6 +6,9 @@ export interface UserRecord extends RowDataPacket {
   email: string;
   full_name: string;
   password_hash?: string;
+  is_verified: boolean;
+  otp_code?: string;
+  otp_expires_at?: Date;
 }
 
 export class UserModel {
@@ -23,6 +26,20 @@ export class UserModel {
     await pool.query(
       'INSERT INTO users (id, email, password_hash, full_name) VALUES (?, ?, ?, ?)',
       [id, email, hashedPassword, full_name]
+    );
+  }
+
+  static async updateOtp(id: string, otp: string, expiresAt: Date) {
+    await pool.query(
+      'UPDATE users SET otp_code = ?, otp_expires_at = ? WHERE id = ?',
+      [otp, expiresAt, id]
+    );
+  }
+
+  static async verifyUser(id: string) {
+    await pool.query(
+      'UPDATE users SET is_verified = TRUE, otp_code = NULL, otp_expires_at = NULL WHERE id = ?',
+      [id]
     );
   }
 }

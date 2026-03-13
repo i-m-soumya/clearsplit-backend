@@ -6,6 +6,7 @@ import morgan from 'morgan';
 import authRoutes from './routes/auth';
 import groupRoutes from './routes/groups';
 import expenseRoutes from './routes/expenses';
+import preferenceRoutes from './routes/preferences';
 import { info } from './utils/logger';
 
 dotenv.config();
@@ -22,6 +23,7 @@ app.use(morgan('combined', { stream: { write: (msg) => info(msg.trim()) } }));
 app.use('/api/auth', authRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/expenses', expenseRoutes);
+app.use('/api/preferences', preferenceRoutes);
 
 import { sendSuccess } from './utils/response';
 
